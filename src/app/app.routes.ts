@@ -8,7 +8,10 @@ import { RegisterComponent } from './pages/register/register';
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+
+  { path: 'home', component: HomeComponent },
 
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
@@ -17,4 +20,5 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent },
 
   { path: 'forgot-password', component: ForgotPasswordComponent }
+
 ];
