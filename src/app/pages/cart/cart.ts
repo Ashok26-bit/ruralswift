@@ -1,16 +1,10 @@
-import { Component } from '@angular/core';
+// src/app/pages/cart/cart.ts
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { NavbarComponent } from '../../components/navbar/navbar';
-
-interface CartItem {
-  id: number;
-  name: string;
-  volume: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { CartService } from '../../services/cart.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-cart',
@@ -19,61 +13,82 @@ interface CartItem {
   templateUrl: './cart.html',
   styleUrl: './cart.css'
 })
-export class CartComponent {
-  cartItems: CartItem[] = [
-    {
-      id: 1,
-      name: 'Herbal Cough Syrup',
-      volume: '100ml',
-      price: 120,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&q=80'
-    },
-    {
-      id: 2,
-      name: 'Premium Basmati Rice',
-      volume: '5kg',
-      price: 250,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1536304993881-ff86e0c9b7f4?w=200&q=80'
-    },
-    {
-      id: 3,
-      name: 'Mineral Water Bottle',
-      volume: '1L',
-      price: 150,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&q=80'
-    }
-  ];
+export class CartComponent implements OnInit {
 
-  updateQuantity(id: number, delta: number): void {
-    this.cartItems = this.cartItems.map(item => {
-      if (item.id === id) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
+  public cart = inject(CartService);
+
+  // Expose reactive signals from CartService
+  readonly items   = this.cart.items;
+  readonly loading = this.cart.loading;
+
+  // Computed totals
+  readonly subtotal = this.cart.total;
+  readonly itemCount = this.cart.itemCount;
+
+  get shipping(): number { return this.subtotal() > 0 ? 40 : 0; }
+  get total(): number    { return this.subtotal() + this.shipping; }
+
+  toastMsg  = '';
+  showToast = false;
+  placingOrder = false;
+
+  constructor(
+    private api: ApiService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.cart.load();
+  }
+
+  updateQuantity(productId: number, delta: number): void {
+    const item = this.items().find(i => i.product_id === productId);
+    if (!item) return;
+    const newQty = item.quantity + delta;
+    if (newQty < 1) { this.removeItem(productId); return; }
+    this.cart.updateQuantity(productId, newQty);
+  }
+
+  removeItem(productId: number): void {
+    this.cart.removeItem(productId);
+    this._toast('Item removed from cart.');
+  }
+
+  clearCart(): void {
+    if (!confirm('Clear all items from cart?')) return;
+    this.cart.clear();
+  }
+
+  /** Place order — requires login */
+  placeOrder(): void {
+    if (!this.api.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    if (this.items().length === 0) return;
+
+    this.placingOrder = true;
+    this.api.placeOrder({
+      deliveryAddress: 'Default Address',
+      paymentMethod:   'cod',
+      items: this.items().map(i => ({ product_id: i.product_id, quantity: i.quantity }))
+    }).subscribe({
+      next: () => {
+        this.placingOrder = false;
+        this.cart.clear();
+        this._toast('Order placed successfully! 🎉');
+        setTimeout(() => this.router.navigate(['/dashboard'], { queryParams: { section: 'orders' } }), 1500);
+      },
+      error: (err) => {
+        this.placingOrder = false;
+        this._toast(err.error?.message || 'Failed to place order. Please try again.', true);
       }
-      return item;
     });
   }
 
-  removeItem(id: number): void {
-    this.cartItems = this.cartItems.filter(item => item.id !== id);
-  }
-
-  get subtotal(): number {
-    return this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }
-
-  get shipping(): number {
-    return this.subtotal > 0 ? 40 : 0;
-  }
-
-  get urgentCharge(): number {
-    return this.subtotal > 0 ? 60 : 0;
-  }
-
-  get total(): number {
-    return this.subtotal + this.shipping + this.urgentCharge;
+  private _toast(msg: string, isError = false): void {
+    this.toastMsg  = msg;
+    this.showToast = true;
+    setTimeout(() => { this.showToast = false; }, 2500);
   }
 }

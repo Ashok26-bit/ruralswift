@@ -77,4 +77,22 @@ router.delete('/addresses/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUT /api/addresses/:id/default — set address as default
+router.put('/addresses/:id/default', async (req, res, next) => {
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [req.user.id]);
+      const { rows } = await client.query(
+        `UPDATE addresses SET is_default = TRUE WHERE id = $1 AND user_id = $2 RETURNING *`,
+        [parseInt(req.params.id), req.user.id]
+      );
+      await client.query('COMMIT');
+      if (!rows[0]) return sendError(res, 404, 'Address not found.', 'NOT_FOUND');
+      sendSuccess(res, 200, 'Default address updated.', { address: rows[0] });
+    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

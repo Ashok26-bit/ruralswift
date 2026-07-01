@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-navbar',
@@ -17,25 +18,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
   /** Mobile hamburger menu state */
   menuOpen = false;
 
-  /** Cart count — reads from localStorage, will be replaced by CartService */
-  cartCount = 0;
-
   /** Search query */
   searchQuery = '';
 
   private routerSub?: Subscription;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, public cart: CartService) {}
 
   ngOnInit(): void {
-    this.updateCartCount();
-
+    // CartService handles its own state, so we just use the signal directly
+    
     // Close menu on every navigation
     this.routerSub = this.router.events.pipe(
       filter(e => e instanceof NavigationEnd)
     ).subscribe(() => {
       this.closeMenu();
-      this.updateCartCount();
     });
   }
 
@@ -78,17 +75,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   // ── Cart ─────────────────────────────────────────────────────────────────
 
-  updateCartCount(): void {
-    try {
-      const cart = localStorage.getItem('cart');
-      if (!cart) { this.cartCount = 0; return; }
-      const items = JSON.parse(cart);
-      this.cartCount = Array.isArray(items)
-        ? items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0)
-        : 0;
-    } catch {
-      this.cartCount = 0;
-    }
+  get cartCount(): number {
+    return this.cart.itemCount();
   }
 
   // ── Mobile menu ──────────────────────────────────────────────────────────

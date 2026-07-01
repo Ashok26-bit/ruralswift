@@ -343,21 +343,21 @@
                   <th>Order ID</th>
                   <th>Date</th>
                   <th>Customer</th>
-                  <th>Item</th>
+                  
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let order of sellerOrders">
-                  <td class="font-mono">{{ order.id }}</td>
-                  <td class="text-muted">{{ order.date }}</td>
-                  <td>{{ order.customer }}</td>
-                  <td>{{ order.item }}</td>
+                  <td class="font-mono">{{ order.order_id }}</td>
+                  <td class="text-muted">{{ (order.created_at | date:'mediumDate') }}</td>
+                  <td>{{ order.customer_name }}</td>
+                  
                   <td><span [class]="'badge ' + getStatusClass(order.status)">{{ order.status }}</span></td>
                   <td>
-                    <button *ngIf="order.status === 'Pending Shipment'" class="btn-ship">Ship Now</button>
-                    <button *ngIf="order.status !== 'Pending Shipment'" class="btn-details">Details</button>
+                    <button *ngIf="order.status === 'pending' || order.status === 'packed' || order.status === 'pending' || order.status === 'confirmed' || order.status === 'packed'" class="btn-ship" (click)="shipOrder(order.order_id)">Ship Now</button>
+                    <button *ngIf="order.status !== 'Pending Shipment' && order.status !== 'pending' && order.status !== 'confirmed' && order.status !== 'packed'" class="btn-details">Details</button>
                   </td>
                 </tr>
               </tbody>
@@ -398,7 +398,7 @@
                   <p class="item-name">{{ item.name }}</p>
                   <p class="item-cat text-muted text-sm">{{ item.category }}</p>
                 </td>
-                <td class="font-mono text-muted">{{ item.id }}</td>
+                <td class="font-mono text-muted">{{ item.product_id }}</td>
                 <td class="font-medium">₹{{ item.price }}</td>
                 <td>
                   <div class="stock-cell">
@@ -406,15 +406,15 @@
                     <span [class]="'stock-dot ' + getStockDotClass(item.stock)"></span>
                   </div>
                 </td>
-                <td><span [class]="'badge ' + getStatusClass(item.status)">{{ item.status }}</span></td>
+                <td><span [class]="'badge ' + getStatusClass(getInventoryStatus(item.stock))">{{ getInventoryStatus(item.stock) }}</span></td>
                 <td class="text-right">
-                  <button class="icon-btn edit-btn" title="Edit">
+                  <button class="icon-btn edit-btn" title="Edit" (click)="editProduct(item)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                     </svg>
                   </button>
-                  <button class="icon-btn del-btn" title="Delete">
+                  <button class="icon-btn del-btn" title="Delete" (click)="deleteProduct(item.product_id)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -443,7 +443,7 @@
                 <th>Order ID</th>
                 <th>Date</th>
                 <th>Customer</th>
-                <th>Item</th>
+                
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -451,15 +451,15 @@
             </thead>
             <tbody>
               <tr *ngFor="let order of sellerOrders">
-                <td class="font-mono">{{ order.id }}</td>
-                <td class="text-muted">{{ order.date }}</td>
-                <td>{{ order.customer }}</td>
-                <td>{{ order.item }}</td>
-                <td class="font-medium">₹{{ order.amount }}</td>
+                <td class="font-mono">{{ order.order_id }}</td>
+                <td class="text-muted">{{ (order.created_at | date:'mediumDate') }}</td>
+                <td>{{ order.customer_name }}</td>
+                
+                <td class="font-medium">₹{{ order.total }}</td>
                 <td><span [class]="'badge ' + getStatusClass(order.status)">{{ order.status }}</span></td>
                 <td>
-                  <button *ngIf="order.status === 'Pending Shipment'" class="btn-ship">Ship Now</button>
-                  <button *ngIf="order.status !== 'Pending Shipment'" class="btn-details">Details</button>
+                  <button *ngIf="order.status === 'pending' || order.status === 'packed' || order.status === 'pending' || order.status === 'confirmed' || order.status === 'packed'" class="btn-ship" (click)="shipOrder(order.order_id)">Ship Now</button>
+                  <button *ngIf="order.status !== 'Pending Shipment' && order.status !== 'pending' && order.status !== 'confirmed' && order.status !== 'packed'" class="btn-details">Details</button>
                 </td>
               </tr>
             </tbody>
@@ -505,7 +505,7 @@
                 <div class="form-group">
                   <label class="form-label">Product Title <span class="req">*</span></label>
                   <input class="form-control" type="text" placeholder="e.g. Neem Organic Fertilizer 1kg"
-                    required [(ngModel)]="newProduct.title" name="title" />
+                    required [(ngModel)]="newProduct.name" name="title" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Brand</label>
@@ -552,7 +552,7 @@
                 <div class="form-group">
                   <label class="form-label">Weight (grams)</label>
                   <input class="form-control" type="number" placeholder="250" min="0"
-                    [(ngModel)]="newProduct.weight" name="weight" />
+                    [(ngModel)]="newProduct.weight_grams" name="weight" />
                 </div>
               </div>
             </div>
@@ -608,3 +608,4 @@
     </main>
   </div>
 </div>
+

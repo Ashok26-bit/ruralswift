@@ -340,6 +340,14 @@ export class ApiService {
     return this.http.delete<ApiResponse>(`${this.baseUrl}/addresses/${id}`);
   }
 
+  setDefaultAddress(id: number): Observable<ApiResponse<{ address: Address }>> {
+    return this.http.put<ApiResponse<{ address: Address }>>(`${this.baseUrl}/addresses/${id}/default`, {});
+  }
+
+  cancelOrder(id: number): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.baseUrl}/orders/${id}/cancel`, {});
+  }
+
   // ── Notifications ─────────────────────────────────────────────────────────
 
   getNotifications(limit: number = 20): Observable<ApiResponse<{ notifications: Notification[]; unreadCount: number }>> {
